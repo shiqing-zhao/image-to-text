@@ -64,7 +64,7 @@ const messages = {
     privacy: '隐私声明',
     privacyDesc: '我们重视您的隐私，所有图片均在本地处理，不会上传到服务器',
     contact: '联系我们',
-    copyright: '© 2024 图片转文本 - 保留所有权利',
+    copyright: '© 2026 图片转文本 - 保留所有权利',
     batchMode: '批处理模式',
     images: '张图片',
     image: '图片',
