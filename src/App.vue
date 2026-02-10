@@ -1,9 +1,10 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType } from 'docx';
+import { createWorker } from 'tesseract.js';
 
 // 使用i18n
 const { t, locale, availableLocales } = useI18n();
@@ -29,15 +30,39 @@ const selectedLanguage = ref(locale.value);
 const changeLanguage = (lang) => {
   selectedLanguage.value = lang;
   locale.value = lang;
+  
+  // 检查并更新PDF转换完成的提示信息
+  const currentText = resultText.value;
+  const pdfCompleteTexts = [
+    '转化PDF完成,请点击下载',
+    'PDF conversion completed, please click to download',
+    'PDF変換が完了しました、ダウンロードするにはクリックしてください',
+    'PDF 변환이 완료되었습니다, 다운로드하려면 클릭하세요',
+    'Conversion PDF terminée, cliquez pour télécharger',
+    'PDF-Konvertierung abgeschlossen, klicken Sie zum Herunterladen',
+    '¡Conversión PDF completada, haz clic para descargar',
+    'Преобразование PDF завершено, нажмите для скачивания',
+    'Conversão PDF concluída, clique para baixar',
+    'Conversione PDF completata, fai clic per scaricare'
+  ];
+  
+  if (pdfCompleteTexts.includes(currentText)) {
+    resultText.value = t('pdfConvertComplete');
+  }
 };
 
 const imageUrl = ref('');
+const imageUrls = ref([]); // 用于批处理多张图片
 const resultText = ref('');
 const isLoading = ref(false);
 const errorMessage = ref('');
 const progress = ref(0);
 const progressText = ref('');
 const outputFormat = ref('text'); // 'text', 'excel', 'pdf' or 'word'
+const worker = ref(null); // Tesseract.js worker实例
+const currentLanguage = ref('chi_sim'); // 默认中文语言包
+const batchResults = ref([]); // 批处理结果
+const isBatchMode = ref(false); // 是否处于批处理模式
 
 // 监听输出格式变化，清空结果
 watch(outputFormat, () => {
@@ -46,28 +71,58 @@ watch(outputFormat, () => {
 
 // 处理图片上传
 const handleImageUpload = (event) => {
-  const file = event.target.files[0];
-  if (file) {
+  const files = event.target.files;
+  if (files.length > 0) {
     // 检查文件类型
-    if (!file.type.startsWith('image/')) {
-      alert('请选择图片类型的文件');
-      return;
+    const validFiles = [];
+    const invalidFiles = [];
+    
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) {
+        invalidFiles.push(file.name);
+      } else if (file.size > 1024 * 1024) { // 限制1MB
+        invalidFiles.push(`${file.name} (文件过大)`);
+      } else {
+        validFiles.push(file);
+      }
     }
     
-    // 检查文件大小（限制1024KB）
-    const maxSize = 1024 * 1024; // 1MB
-    if (file.size > maxSize) {
-      alert('文件大小超过限制，最大支持1MB');
-      return;
+    if (invalidFiles.length > 0) {
+      alert(`请选择图片类型的文件：\n${invalidFiles.join('\n')}`);
     }
     
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      imageUrl.value = e.target.result;
-      resultText.value = '';
-      errorMessage.value = '';
-    };
-    reader.readAsDataURL(file);
+    if (validFiles.length > 0) {
+      if (validFiles.length === 1) {
+        // 单张图片模式
+        isBatchMode.value = false;
+        imageUrls.value = [];
+        batchResults.value = [];
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          imageUrl.value = e.target.result;
+          resultText.value = '';
+          errorMessage.value = '';
+        };
+        reader.readAsDataURL(validFiles[0]);
+      } else {
+        // 批处理模式
+        isBatchMode.value = true;
+        imageUrl.value = '';
+        resultText.value = '';
+        errorMessage.value = '';
+        batchResults.value = [];
+        
+        imageUrls.value = [];
+        for (const file of validFiles) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            imageUrls.value.push(e.target.result);
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    }
   }
 };
 
@@ -81,133 +136,326 @@ const handleDrop = (event) => {
   event.preventDefault();
   event.stopPropagation();
   
-  const file = event.dataTransfer.files[0];
-  if (file) {
+  const files = event.dataTransfer.files;
+  if (files.length > 0) {
     // 检查文件类型
-    if (!file.type.startsWith('image/')) {
-      alert('请选择图片类型的文件');
-      return;
+    const validFiles = [];
+    const invalidFiles = [];
+    
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) {
+        invalidFiles.push(file.name);
+      } else if (file.size > 1024 * 1024) { // 限制1MB
+        invalidFiles.push(`${file.name} (文件过大)`);
+      } else {
+        validFiles.push(file);
+      }
     }
     
-    // 检查文件大小（限制1024KB）
-    const maxSize = 1024 * 1024; // 1MB
-    if (file.size > maxSize) {
-      alert('文件大小超过限制，最大支持1MB');
-      return;
+    if (invalidFiles.length > 0) {
+      alert(`请选择图片类型的文件：\n${invalidFiles.join('\n')}`);
     }
     
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      imageUrl.value = e.target.result;
-      resultText.value = '';
-      errorMessage.value = '';
-    };
-    reader.readAsDataURL(file);
+    if (validFiles.length > 0) {
+      if (validFiles.length === 1) {
+        // 单张图片模式
+        isBatchMode.value = false;
+        imageUrls.value = [];
+        batchResults.value = [];
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          imageUrl.value = e.target.result;
+          resultText.value = '';
+          errorMessage.value = '';
+        };
+        reader.readAsDataURL(validFiles[0]);
+      } else {
+        // 批处理模式
+        isBatchMode.value = true;
+        imageUrl.value = '';
+        resultText.value = '';
+        errorMessage.value = '';
+        batchResults.value = [];
+        
+        imageUrls.value = [];
+        for (const file of validFiles) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            imageUrls.value.push(e.target.result);
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    }
   }
+};
+
+// 图片预处理函数
+const preprocessImage = (imageSrc) => {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    // 设置超时，防止图片加载时间过长
+    const timeoutId = setTimeout(() => {
+      reject(new Error('图片加载超时'));
+    }, 10000); // 10秒超时
+    
+    img.onload = () => {
+      clearTimeout(timeoutId);
+      try {
+        // 计算新尺寸（保持宽高比，限制最大宽度）
+        const maxWidth = 1200;
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > maxWidth) {
+          const ratio = maxWidth / width;
+          width *= ratio;
+          height *= ratio;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // 绘制并预处理图片
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // 获取图片数据
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+        
+        // 简单的二值化处理
+        for (let i = 0; i < data.length; i += 4) {
+          const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
+          const threshold = 128;
+          const value = gray > threshold ? 255 : 0;
+          data[i] = value;     // R
+          data[i + 1] = value; // G
+          data[i + 2] = value; // B
+          // data[i + 3] 保持不变 (alpha)
+        }
+        
+        // 将处理后的数据放回canvas
+        ctx.putImageData(imageData, 0, 0);
+        
+        // 返回处理后的图片URL
+        resolve(canvas.toDataURL('image/png'));
+      } catch (error) {
+        reject(error);
+      }
+    };
+    
+    img.onerror = () => {
+      clearTimeout(timeoutId);
+      reject(new Error('图片加载失败'));
+    };
+    
+    img.src = imageSrc;
+  });
+};
+
+// 初始化Tesseract.js worker
+const initWorker = async () => {
+  console.log('检查worker实例:', worker.value ? '已存在' : '不存在');
+  
+  if (!worker.value) {
+    console.log('开始初始化新的worker，语言:', currentLanguage.value);
+    // 添加超时机制
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('Tesseract.js初始化超时，请检查网络连接'));
+      }, 60000); // 增加到60秒超时，确保有足够时间下载资源
+    });
+    
+    // 同时执行初始化和超时检查
+    try {
+      // 使用最新的API方式创建worker，直接指定语言
+      worker.value = await Promise.race([
+        createWorker(currentLanguage.value, 1, {
+          logger: (m) => {
+            // 处理进度更新
+            console.log('Tesseract.js状态:', m.status, '进度:', m.progress);
+            if (m.status === 'recognizing text') {
+              progress.value = m.progress * 100;
+              progressText.value = `${t('recognizing')} ${Math.round(progress.value)}%`;
+            } else if (m.status === 'loading tesseract core') {
+              progress.value = m.progress * 30;
+              progressText.value = `${t('loadingCore')} ${Math.round(progress.value)}%`;
+            } else if (m.status === 'loading language pack') {
+              progress.value = 30 + (m.progress * 40);
+              progressText.value = `${t('loadingLanguage')} ${Math.round(progress.value)}%`;
+            } else if (m.status === 'initializing api') {
+              progress.value = 70 + (m.progress * 20);
+              progressText.value = `${t('initializing')} ${Math.round(progress.value)}%`;
+            }
+          }
+        }),
+        timeoutPromise
+      ]);
+      console.log('Worker初始化成功');
+    } catch (error) {
+      console.error('Worker初始化失败:', error);
+      throw error;
+    }
+  } else {
+    console.log('重用已存在的worker实例');
+  }
+  return worker.value;
 };
 
 // 转换图片为文本、Excel或PDF
 const imageToText = async () => {
-  if (!imageUrl.value) {
+  if (!imageUrl.value && imageUrls.value.length === 0) {
     errorMessage.value = t('pleaseUpload');
     return;
   }
 
   isLoading.value = true;
   progress.value = 0;
-  progressText.value = t('processing');
+  progressText.value = t('initializing');
 
   errorMessage.value = '';
   resultText.value = '';
 
-  // 启动循环进度动画
-  let animationFrameId = null;
-  let startTime = Date.now();
-  
-  const animateProgress = () => {
-    const elapsed = Date.now() - startTime;
-    const duration = 3000; // 动画持续时间（毫秒）
-    
-    if (elapsed < duration) {
-      // 动画阶段：从0%到100%
-      progress.value = (elapsed / duration) * 100;
-    } else {
-      // 重置阶段：重置为0%并重新开始
-      startTime = Date.now();
-      progress.value = 0;
-    }
-    
-    animationFrameId = requestAnimationFrame(animateProgress);
-  };
-  
-  // 开始动画
-  animationFrameId = requestAnimationFrame(animateProgress);
-
   try {
     // 如果选择PDF格式，直接调用图片转PDF功能
     if (outputFormat.value === 'pdf') {
+      if (isBatchMode.value) {
+        errorMessage.value = t('pdfBatchNotSupported');
+        isLoading.value = false;
+        return;
+      }
+      
       await imageToPdf();
       // 显示转换完成提示
-      resultText.value = '转化PDF完成,请点击下载';
+      resultText.value = t('pdfConvertComplete');
       setTimeout(() => {
         isLoading.value = false;
+        progress.value = 0;
+        progressText.value = '';
       }, 500);
       return;
     }
 
-    // 对于文本、Excel和Word格式，进行OCR识别
-    // 步骤1：准备图片
-    const response = await fetch(imageUrl.value);
-    const blob = await response.blob();
+    // 初始化worker
+    progressText.value = t('initializing');
+    progress.value = 0;
     
-    // 步骤2：创建表单数据
-    const formData = new FormData();
-    formData.append('apikey', 'K85957309788957'); // 免费API Key
-    formData.append('language', 'chs'); // 中文
-    formData.append('isOverlayRequired', 'false');
-    // 对于Excel和Word输出，启用表格识别模式
-    if (outputFormat.value === 'excel' || outputFormat.value === 'word') {
-      formData.append('isTable', 'true');
-      formData.append('OCREngine', '2'); // 使用更高级的OCR引擎
-    }
-    formData.append('file', blob, 'image.png');
-    
-    // 步骤3：上传并识别
-    const ocrResponse = await fetch('https://api.ocr.space/parse/image', {
-      method: 'POST',
-      body: formData
-    });
-    
-    // 步骤4：处理结果
-    const ocrResult = await ocrResponse.json();
-    console.log('OCR结果:', ocrResult);
-    
-    if (ocrResult.IsErroredOnProcessing) {
-      throw new Error(ocrResult.ErrorMessage[0] || '识别失败');
-    }
-    
-    const parsedText = ocrResult.ParsedResults[0]?.ParsedText || '未识别到文本';
-    resultText.value = parsedText;
-    
-    // 处理Word格式
-    if (outputFormat.value === 'word') {
-      await downloadWord();
+    try {
+      const tessWorker = await initWorker();
+      
+      // 最新版本的Tesseract.js不需要单独调用loadLanguage和initialize
+      // 语言已经在createWorker时指定了
+      console.log('Worker准备就绪，开始处理图片');
+      progressText.value = t('preprocessing');
+      progress.value = 30;
+
+      if (isBatchMode.value) {
+        // 批处理模式
+        batchResults.value = [];
+        progressText.value = t('processingBatch');
+        
+        for (let i = 0; i < imageUrls.value.length; i++) {
+          progressText.value = `${t('processingImage')} ${i + 1}/${imageUrls.value.length}`;
+          progress.value = (i / imageUrls.value.length) * 100;
+          
+          try {
+            // 预处理图片
+            const processedImage = await preprocessImage(imageUrls.value[i]);
+            
+            // 识别图片
+            const { data: { text } } = await tessWorker.recognize(processedImage);
+            
+            batchResults.value.push({
+              index: i + 1,
+              text: text || '未识别到文本',
+              success: true
+            });
+          } catch (error) {
+            console.error(`Error processing image ${i + 1}:`, error);
+            batchResults.value.push({
+              index: i + 1,
+              text: `识别失败: ${error.message}`,
+              success: false
+            });
+          }
+        }
+        
+        // 合并批处理结果
+        resultText.value = batchResults.value
+          .map(item => `=== ${t('image')} ${item.index} ===\n${item.text}\n`) 
+          .join('');
+      } else {
+        // 单张图片模式
+        try {
+          // 预处理图片
+          progressText.value = t('preprocessing');
+          const processedImage = await preprocessImage(imageUrl.value);
+          
+          // 识别图片
+          progressText.value = t('recognizing');
+          const { data: { text } } = await tessWorker.recognize(processedImage);
+          
+          resultText.value = text || '未识别到文本';
+        } catch (error) {
+          console.error('Error in single image processing:', error);
+          throw error;
+        }
+      }
+      
+      // 处理Word格式 - 不再自动下载，由用户手动点击下载按钮
+      // if (outputFormat.value === 'word' && resultText.value) {
+      //   await downloadWord();
+      // }
+      
+      progressText.value = t('completed');
+      progress.value = 100;
+    } catch (initError) {
+      console.error('Tesseract.js初始化失败:', initError);
+      // 清除worker实例，以便下次可以重新尝试初始化
+      if (worker.value) {
+        try {
+          await worker.value.terminate();
+        } catch (e) {
+          console.error('终止worker失败:', e);
+        }
+        worker.value = null;
+      }
+      // 抛出错误，让外层catch处理
+      throw new Error(`Tesseract.js初始化失败: ${initError.message}。请检查网络连接后重试。`);
+    } finally {
+      // 不要在这里终止worker，以便后续重用
+      // 只有在组件卸载时才终止worker
     }
   } catch (error) {
     console.error('Error:', error);
     errorMessage.value = `${t('processFailed')}: ${error.message || t('checkNetwork')}`;
   } finally {
-
     isLoading.value = false;
-    // 清除进度动画
-    clearInterval(progressInterval);
     // 重置进度
     setTimeout(() => {
       progress.value = 0;
       progressText.value = '';
-    }, 500);
+    }, 1000);
   }
 };
+
+// 清理worker实例
+onUnmounted(async () => {
+  if (worker.value) {
+    try {
+      await worker.value.terminate();
+      console.log('Worker已终止');
+    } catch (error) {
+      console.error('终止Worker失败:', error);
+    } finally {
+      worker.value = null; // 确保worker实例被正确清除
+    }
+  }
+});
 
 // 将图片直接转换为PDF
 const imageToPdf = async () => {
@@ -667,10 +915,18 @@ const downloadWord = () => {
     }]
   });
 
-  // 生成Word文档但不自动下载
+  // 生成Word文档并触发下载
   try {
     Packer.toBlob(doc).then(blob => {
-      // 无弹窗提示
+      // 创建下载链接并触发下载
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'image-to-word.docx';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     });
   } catch (error) {
     console.error('Error generating Word document:', error);
@@ -681,8 +937,11 @@ const downloadWord = () => {
 // 清除所有内容
 const clearAll = () => {
   imageUrl.value = '';
+  imageUrls.value = [];
   resultText.value = '';
   errorMessage.value = '';
+  batchResults.value = [];
+  isBatchMode.value = false;
   // 重置文件输入框，确保可以再次选择相同的文件
   const fileInput = document.getElementById('image-upload');
   if (fileInput) {
@@ -785,13 +1044,32 @@ const clearAll = () => {
                 id="image-upload"
               />
               
-              <!-- 当有图片时显示预览 -->
-              <div v-if="imageUrl" class="w-full">
+              <!-- 当有单张图片时显示预览 -->
+              <div v-if="imageUrl && !isBatchMode" class="w-full">
                 <img 
                   :src="imageUrl" 
                   alt="Preview" 
                   class="w-full h-auto max-h-64 object-contain mx-auto"
                 />
+              </div>
+              
+              <!-- 当有多个图片时显示网格预览 -->
+              <div v-else-if="imageUrls.length > 0 && isBatchMode" class="w-full">
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div v-for="(imgUrl, index) in imageUrls" :key="index" class="relative">
+                    <img 
+                      :src="imgUrl" 
+                      :alt="`Preview ${index + 1}`" 
+                      class="w-full h-32 object-cover rounded"
+                    />
+                    <div class="absolute top-1 right-1 bg-blue-500 text-white text-xs px-2 py-1 rounded">
+                      {{ index + 1 }}
+                    </div>
+                  </div>
+                </div>
+                <p class="text-center text-sm text-gray-500 mt-2">
+                  {{ t('batchMode') }}: {{ imageUrls.length }} {{ t('images') }}
+                </p>
               </div>
               
               <!-- 当没有图片时显示上传提示 -->

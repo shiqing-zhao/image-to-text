@@ -48,6 +48,7 @@ const messages = {
     directConversion: '直接转换',
     wordError: '生成Word文档时出错，请重试。',
     pleaseConvert: '请先转换文本',
+    pdfConvertComplete: '转化PDF完成,请点击下载',
 
     features: '功能特点',
     feature1: '免费使用',
@@ -63,7 +64,19 @@ const messages = {
     privacy: '隐私声明',
     privacyDesc: '我们重视您的隐私，所有图片均在本地处理，不会上传到服务器',
     contact: '联系我们',
-    copyright: '© 2024 图片转文本 - 保留所有权利'
+    copyright: '© 2024 图片转文本 - 保留所有权利',
+    batchMode: '批处理模式',
+    images: '张图片',
+    image: '图片',
+    initializing: '初始化中...',
+    preprocessing: '预处理中...',
+    recognizing: '识别中',
+    loadingCore: '加载核心引擎',
+    loadingLanguage: '加载语言包',
+    completed: '完成',
+    processingBatch: '批处理中...',
+    processingImage: '处理图片',
+    pdfBatchNotSupported: 'PDF格式不支持批处理模式'
   },
   en: {
     title: 'Image to Text',
@@ -111,6 +124,7 @@ const messages = {
     directConversion: 'Direct conversion',
     wordError: 'Error generating Word document, please try again.',
     pleaseConvert: 'Please convert text first',
+    pdfConvertComplete: 'PDF conversion completed, please click to download',
 
     features: 'Features',
     feature1: 'Free to Use',
@@ -126,7 +140,19 @@ const messages = {
     privacy: 'Privacy Statement',
     privacyDesc: 'We value your privacy, all images are processed locally and will not be uploaded to servers',
     contact: 'Contact Us',
-    copyright: '© 2024 Image to Text - All rights reserved'
+    copyright: '© 2024 Image to Text - All rights reserved',
+    batchMode: 'Batch Mode',
+    images: 'images',
+    image: 'Image',
+    initializing: 'Initializing...',
+    preprocessing: 'Preprocessing...',
+    recognizing: 'Recognizing',
+    loadingCore: 'Loading core engine',
+    loadingLanguage: 'Loading language pack',
+    completed: 'Completed',
+    processingBatch: 'Processing batch...',
+    processingImage: 'Processing image',
+    pdfBatchNotSupported: 'PDF format does not support batch mode'
   },
   ja: {
     title: '画像からテキスト',
@@ -174,6 +200,7 @@ const messages = {
     directConversion: '直接変換',
     wordError: 'Word文書の生成中にエラーが発生しました。再試行してください。',
     pleaseConvert: 'まずテキストを変換してください',
+    pdfConvertComplete: 'PDF変換が完了しました、ダウンロードするにはクリックしてください',
 
     features: '特徴',
     feature1: '無料使用',
@@ -237,6 +264,7 @@ const messages = {
     directConversion: '직접 변환',
     wordError: 'Word 문서 생성 중 오류가 발생했습니다。다시 시도하세요。',
     pleaseConvert: '먼저 텍스트를 변환하세요',
+    pdfConvertComplete: 'PDF 변환이 완료되었습니다, 다운로드하려면 클릭하세요',
 
     features: '기능 특징',
     feature1: '무료 사용',
@@ -300,6 +328,7 @@ const messages = {
     directConversion: 'Conversion directe',
     wordError: 'Erreur lors de la génération du document Word。Veuillez réessayer。',
     pleaseConvert: 'Veuillez d\'abord convertir le texte',
+    pdfConvertComplete: 'Conversion PDF terminée, cliquez pour télécharger',
 
     features: 'Caractéristiques',
     feature1: 'Utilisation gratuite',
@@ -363,6 +392,7 @@ const messages = {
     directConversion: 'Direkte Konvertierung',
     wordError: 'Fehler bei der Erstellung des Word-Dokuments。Bitte versuchen Sie es erneut。',
     pleaseConvert: 'Bitte konvertieren Sie zuerst den Text',
+    pdfConvertComplete: 'PDF-Konvertierung abgeschlossen, klicken Sie zum Herunterladen',
 
     features: 'Funktionen',
     feature1: 'Kostenlos zu verwenden',
@@ -426,6 +456,7 @@ const messages = {
     directConversion: 'Conversión directa',
     wordError: 'Error al generar el documento Word。Por favor, inténtalo de nuevo。',
     pleaseConvert: 'Por favor, convierte el texto primero',
+    pdfConvertComplete: '¡Conversión PDF completada, haz clic para descargar',
 
     features: 'Características',
     feature1: 'Uso gratuito',
@@ -489,6 +520,7 @@ const messages = {
     directConversion: 'Прямое преобразование',
     wordError: 'Ошибка при генерации документа Word。Пожалуйста, попробуйте снова。',
     pleaseConvert: 'Пожалуйста, сначала преобразуйте текст',
+    pdfConvertComplete: 'Преобразование PDF завершено, нажмите для скачивания',
 
     features: 'Функции',
     feature1: 'Бесплатное использование',
@@ -552,6 +584,7 @@ const messages = {
     directConversion: 'Conversão direta',
     wordError: 'Erro ao gerar o documento Word。Por favor, tente novamente。',
     pleaseConvert: 'Por favor, converta o texto primeiro',
+    pdfConvertComplete: 'Conversão PDF concluída, clique para baixar',
 
     features: 'Recursos',
     feature1: 'Uso gratuito',
@@ -615,6 +648,7 @@ const messages = {
     directConversion: 'Conversione diretta',
     wordError: 'Errore durante la generazione del documento Word。Per favore, riprova。',
     pleaseConvert: 'Per favore, converti prima il testo',
+    pdfConvertComplete: 'Conversione PDF completata, fai clic per scaricare',
 
     features: 'Caratteristiche',
     feature1: 'Uso gratuito',
