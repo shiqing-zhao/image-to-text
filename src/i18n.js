@@ -140,7 +140,7 @@ const messages = {
     privacy: 'Privacy Statement',
     privacyDesc: 'We value your privacy, all images are processed locally and will not be uploaded to servers',
     contact: 'Contact Us',
-    copyright: '© 2024 Image to Text - All rights reserved',
+    copyright: '© 2026 Image to Text - All rights reserved',
     batchMode: 'Batch Mode',
     images: 'images',
     image: 'Image',
@@ -216,7 +216,7 @@ const messages = {
     privacy: 'プライバシーに関する声明',
     privacyDesc: 'プライバシーを重視しています、すべての画像はローカルで処理され、サーバーにアップロードされることはありません',
     contact: 'お問い合わせ',
-    copyright: '© 2024 画像からテキスト - 全著作権所有'
+    copyright: '© 2026 画像からテキスト - 全著作権所有'
   },
   ko: {
     title: '이미지에서 텍스트로',
@@ -280,7 +280,7 @@ const messages = {
     privacy: '개인 정보 보호 정책',
     privacyDesc: '개인 정보를重视합니다, 모든 이미지는 로컬에서 처리되며 서버에 업로드되지 않습니다',
     contact: '연락처',
-    copyright: '© 2024 이미지에서 텍스트로 - 저작권 소유'
+    copyright: '© 2026 이미지에서 텍스트로 - 저작권 소유'
   },
   fr: {
     title: 'Image vers Texte',
@@ -344,7 +344,7 @@ const messages = {
     privacy: 'Déclaration de confidentialité',
     privacyDesc: 'Nous attachons importance à votre vie privée, toutes les images sont traitées localement et ne sont pas téléversées sur les serveurs',
     contact: 'Contactez-nous',
-    copyright: '© 2024 Image vers Texte - Tous droits réservés'
+    copyright: '© 2026 Image vers Texte - Tous droits réservés'
   },
   de: {
     title: 'Bild zu Text',
@@ -408,7 +408,7 @@ const messages = {
     privacy: 'Datenschutzerklärung',
     privacyDesc: 'Wir legen Wert auf Ihre Privatsphäre, alle Bilder werden lokal verarbeitet und nicht auf Server hochgeladen',
     contact: 'Kontaktieren Sie uns',
-    copyright: '© 2024 Bild zu Text - Alle Rechte vorbehalten'
+    copyright: '© 2026 Bild zu Text - Alle Rechte vorbehalten'
   },
   es: {
     title: 'Imagen a Texto',
@@ -472,7 +472,7 @@ const messages = {
     privacy: 'Declaración de privacidad',
     privacyDesc: 'Valoramos tu privacidad, todas las imágenes se procesan localmente y no se suben a servidores',
     contact: 'Contáctanos',
-    copyright: '© 2024 Imagen a Texto - Todos los derechos reservados'
+    copyright: '© 2026 Imagen a Texto - Todos los derechos reservados'
   },
   ru: {
     title: 'Изображение в текст',
@@ -536,7 +536,7 @@ const messages = {
     privacy: 'Политика конфиденциальности',
     privacyDesc: 'Мы ценим вашу конфиденциальность, все изображения обрабатываются локально и не загружаются на серверы',
     contact: 'Свяжитесь с нами',
-    copyright: '© 2024 Изображение в текст - Все права защищены'
+    copyright: '© 2026 Изображение в текст - Все права защищены'
   },
   pt: {
     title: 'Imagem para Texto',
@@ -600,7 +600,7 @@ const messages = {
     privacy: 'Declaração de privacidade',
     privacyDesc: 'Valorizamos sua privacidade, todas as imagens são processadas localmente e não são enviadas para servidores',
     contact: 'Contate-nos',
-    copyright: '© 2024 Imagem para Texto - Todos os direitos reservados'
+    copyright: '© 2026 Imagem para Texto - Todos os direitos reservados'
   },
   it: {
     title: 'Immagine in Testo',
@@ -664,7 +664,7 @@ const messages = {
     privacy: 'Dichiarazione di privacy',
     privacyDesc: 'Valorizziamo la tua privacy, tutte le immagini sono elaborate localmente e non vengono caricate sui server',
     contact: 'Contattaci',
-    copyright: '© 2024 Immagine in Testo - Tutti i diritti riservati'
+    copyright: '© 2026 Immagine in Testo - Tutti i diritti riservati'
   }
 };
 
